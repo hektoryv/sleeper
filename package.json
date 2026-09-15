@@ -1,0 +1,11 @@
+{
+  "name": "sleeper",
+  "version": "0.1.0",
+  "description": "Cross Sums - a simple game made to make you fall asleep",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "start": "python3 -m http.server 8080"
+  }
+}
