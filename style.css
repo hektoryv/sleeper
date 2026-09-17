@@ -1,16 +1,33 @@
-/* Dark, low-contrast-on-the-eyes, built for one thumb in a dark room. */
+/* Built for one thumb in a dark room.
+ *
+ * Every brightness is an alpha over black, driven by a CSS variable that the
+ * appearance sliders write to. The defaults here are the starting point only -
+ * src/settings.js overwrites them on load. */
 
 :root {
-  --bg: #0b0b0d;
-  --surface: #17171c;
-  --surface-raised: #23232b;
-  --cell: #121216;
-  --line: #2a2a33;
-  --text: #f2f2f5;
-  --muted: #8d8d9c;
-  --accent: #c98aa8;
-  --heart: #c0392f;
-  --bad: #b8433a;
+  /* Overwritten by src/settings.js. */
+  --digit-scale: 1;
+  --digit-alpha: 0.62;
+  --target-scale: 1;
+  --target-alpha: 0.54;
+  --remaining-scale: 1.1;
+  --remaining-alpha: 0.4;
+  --ui-alpha: 0.42;
+
+  --bg: #000;
+  --digit: rgb(255 255 255 / var(--digit-alpha));
+  --target: rgb(255 255 255 / var(--target-alpha));
+  --remaining: rgb(255 255 255 / var(--remaining-alpha));
+
+  /* Chrome scales off one knob so the whole frame can recede at once. */
+  --cell-bg: rgb(255 255 255 / calc(var(--ui-alpha) * 0.035));
+  --line: rgb(255 255 255 / calc(var(--ui-alpha) * 0.13));
+  --surface: rgb(255 255 255 / calc(var(--ui-alpha) * 0.07));
+  --surface-raised: rgb(255 255 255 / calc(var(--ui-alpha) * 0.14));
+  --chrome-text: rgb(255 255 255 / calc(var(--ui-alpha) * 0.9));
+  --accent: rgb(201 138 168 / calc(0.25 + var(--ui-alpha) * 0.75));
+  --heart: rgb(192 57 47 / calc(0.3 + var(--ui-alpha) * 0.7));
+  --bad: #8c332c;
   color-scheme: dark;
 }
 
@@ -27,7 +44,7 @@ body {
 
 body {
   background: var(--bg);
-  color: var(--text);
+  color: var(--chrome-text);
   font-family: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   font-weight: 600;
   display: flex;
@@ -51,50 +68,52 @@ body {
 
 .topbar {
   display: grid;
-  grid-template-columns: 48px 1fr 48px;
+  grid-template-columns: 44px 1fr 44px 44px;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .title {
   text-align: center;
+  min-width: 0;
 }
 
 .difficulty {
   margin: 0;
-  font-size: 11px;
+  font-size: 10px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: rgb(255 255 255 / calc(var(--ui-alpha) * 0.55));
 }
 
 .title h1 {
   margin: 2px 0 0;
-  font-size: 26px;
+  font-size: 21px;
   color: var(--accent);
   font-weight: 800;
+  white-space: nowrap;
 }
 
 .icon-button {
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   border: 0;
   border-radius: 50%;
   background: var(--surface-raised);
-  color: var(--text);
+  color: var(--chrome-text);
   display: grid;
   place-items: center;
   cursor: pointer;
 }
 
 .icon-button svg {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   fill: currentColor;
 }
 
 .icon-button:active {
-  background: #30303a;
+  background: var(--surface);
 }
 
 /* ---------- hearts ---------- */
@@ -103,18 +122,18 @@ body {
   display: flex;
   justify-content: center;
   gap: 10px;
-  min-height: 24px;
+  min-height: 22px;
 }
 
 .heart {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   fill: var(--heart);
   transition: opacity 180ms ease, transform 180ms ease;
 }
 
 .heart.spent {
-  opacity: 0.16;
+  opacity: 0.14;
   transform: scale(0.82);
 }
 
@@ -128,7 +147,6 @@ body {
 }
 
 .clue {
-  aspect-ratio: 1;
   background: var(--surface);
   border-radius: 8px;
   display: flex;
@@ -139,23 +157,33 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* Only the header row needs this: nothing else in that row gives it a height.
+ * Do NOT put it on the row clues - an aspect-ratio makes the cross size no
+ * longer `auto`, so align-self: stretch stops applying and the tile aligns to
+ * the top of its row instead of filling it. */
+.clue.col {
+  aspect-ratio: 1;
+}
+
 /* The real game hides a clue once its line is fully decided. */
 .clue.done {
-  opacity: 0.12;
+  opacity: 0.1;
 }
 
 .clue .target {
-  font-size: clamp(14px, 4.4vw, 21px);
+  font-size: calc(clamp(14px, 4.4vw, 21px) * var(--target-scale));
   font-weight: 700;
+  color: var(--target);
 }
 
 .clue .remaining {
   position: absolute;
   top: 2px;
   left: 5px;
-  font-size: clamp(8px, 2.4vw, 11px);
-  color: var(--muted);
+  font-size: calc(clamp(8px, 2.4vw, 11px) * var(--remaining-scale));
+  color: var(--remaining);
   font-weight: 700;
+  line-height: 1;
 }
 
 .clue.done .remaining {
@@ -168,12 +196,12 @@ body {
 
 .cell {
   isolation: isolate;
-  background: var(--cell);
+  background: var(--cell-bg);
   border: 1px solid var(--line);
   border-radius: 4px;
-  color: var(--text);
+  color: var(--digit);
   font: inherit;
-  font-size: clamp(15px, 5vw, 24px);
+  font-size: calc(clamp(15px, 5vw, 24px) * var(--digit-scale));
   font-weight: 600;
   display: grid;
   place-items: center;
@@ -189,11 +217,11 @@ body {
   transition: opacity 200ms ease;
 }
 
-/* Kept cells get the ring from the screenshot. */
+/* Kept cells get the ring from the original game. */
 .cell .ring {
   position: absolute;
   inset: 12%;
-  border: 2px solid var(--text);
+  border: 2px solid var(--digit);
   border-radius: 50%;
   opacity: 0;
   transform: scale(0.6);
@@ -205,9 +233,9 @@ body {
   transform: scale(1);
 }
 
-/* Removed cells go near-blank, as in the real game. */
+/* Removed cells go near-blank, as in the original. */
 .cell.removed .digit {
-  opacity: 0.08;
+  opacity: 0.14;
 }
 
 .cell.decided {
@@ -217,7 +245,7 @@ body {
 .cell.wrong {
   animation: shake 320ms ease;
   border-color: var(--bad);
-  background: #2a1414;
+  background: rgb(140 51 44 / 0.25);
 }
 
 @keyframes shake {
@@ -231,7 +259,7 @@ body {
   .cell .ring, .cell .digit, .heart, .clue { transition: none; }
 }
 
-/* ---------- controls ---------- */
+/* ---------- mode switch ---------- */
 
 .controls {
   display: flex;
@@ -254,7 +282,7 @@ body {
   border: 0;
   border-radius: 999px;
   background: transparent;
-  color: var(--muted);
+  color: rgb(255 255 255 / calc(var(--ui-alpha) * 0.5));
   display: grid;
   place-items: center;
   cursor: pointer;
@@ -269,7 +297,131 @@ body {
 
 .mode[aria-checked="true"] {
   background: var(--surface-raised);
-  color: var(--text);
+  color: var(--chrome-text);
+}
+
+/* ---------- appearance sheet ---------- */
+
+/* Anchored to the bottom with no backdrop, so the board stays visible and you
+ * can see a slider's effect while dragging it. */
+.settings {
+  position: fixed;
+  z-index: 20;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: 0 auto;
+  max-width: 520px;
+  max-height: 72dvh;
+  overflow-y: auto;
+  background: #0a0a0c;
+  border-top: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 18px 18px 0 0;
+  padding: 14px 18px calc(18px + env(safe-area-inset-bottom));
+  box-shadow: 0 -18px 40px rgb(0 0 0 / 0.6);
+}
+
+.settings[hidden] {
+  display: none;
+}
+
+.settings-head {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.settings-head h2 {
+  margin: 0;
+  font-size: 15px;
+  color: rgb(255 255 255 / 0.72);
+  font-weight: 700;
+}
+
+.link-button {
+  border: 0;
+  background: none;
+  color: rgb(255 255 255 / 0.5);
+  font: inherit;
+  font-size: 13px;
+  padding: 8px;
+  cursor: pointer;
+}
+
+.settings-group {
+  margin-top: 12px;
+}
+
+.settings-group > h3 {
+  margin: 0 0 2px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 0.34);
+  font-weight: 700;
+}
+
+.slider-row {
+  display: grid;
+  grid-template-columns: 74px 1fr 46px;
+  align-items: center;
+  gap: 10px;
+  padding: 3px 0;
+}
+
+.slider-row label {
+  font-size: 13px;
+  color: rgb(255 255 255 / 0.6);
+  font-weight: 500;
+}
+
+.slider-row output {
+  font-size: 12px;
+  color: rgb(255 255 255 / 0.4);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 30px;
+  background: none;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 3px;
+  background: rgb(255 255 255 / 0.16);
+}
+
+input[type="range"]::-moz-range-track {
+  height: 3px;
+  border-radius: 3px;
+  background: rgb(255 255 255 / 0.16);
+}
+
+/* Generous thumb - this gets used half asleep. */
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  margin-top: -9.5px;
+  border-radius: 50%;
+  background: rgb(201 138 168 / 0.85);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(201 138 168 / 0.85);
 }
 
 /* ---------- end-of-game sheet ---------- */
@@ -278,7 +430,7 @@ body {
   position: fixed;
   inset: 0;
   z-index: 10;
-  background: rgba(6, 6, 8, 0.82);
+  background: rgb(0 0 0 / 0.86);
   display: grid;
   place-items: center;
   padding: 24px;
@@ -289,7 +441,7 @@ body {
 }
 
 .sheet {
-  background: var(--surface);
+  background: rgb(18 18 22 / 0.98);
   border-radius: 20px;
   padding: 28px 24px 20px;
   max-width: 340px;
@@ -305,7 +457,7 @@ body {
 
 .sheet p {
   margin: 0 0 22px;
-  color: var(--muted);
+  color: rgb(255 255 255 / 0.45);
   font-weight: 500;
   line-height: 1.5;
 }
@@ -320,8 +472,8 @@ body {
   padding: 14px 10px;
   border: 0;
   border-radius: 12px;
-  background: var(--surface-raised);
-  color: var(--text);
+  background: rgb(255 255 255 / 0.08);
+  color: rgb(255 255 255 / 0.8);
   font: inherit;
   font-size: 15px;
   cursor: pointer;
@@ -329,6 +481,6 @@ body {
 
 .text-button.primary {
   background: var(--accent);
-  color: #1b1016;
+  color: #12090e;
   font-weight: 700;
 }

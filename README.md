@@ -18,6 +18,18 @@ The toggle at the bottom picks what a tap does — cross out, or circle as kept.
 You get three hearts; a tap that contradicts the solution costs one and is not
 applied, so the board on screen is always a correct partial solution.
 
+## Appearance
+
+The ⋮ button opens sliders for the size and brightness of the board numbers, the
+targets, and the small "still needed" number, plus one for everything else —
+tiles, borders, buttons and hearts. The defaults are deliberately dim; the point
+is to find the darkest setting you can still read in a dark room.
+
+Every one of them is a CSS custom property written onto `:root`, so the board
+updates live underneath the sheet as you drag. Settings persist in
+`localStorage` and are clamped back into range on load, so a stored value from
+an older version can never leave the board unreadable.
+
 ## Running it
 
 ```sh
@@ -30,6 +42,9 @@ Any static file server works — there is nothing to compile. ES modules need
 
 On Android, open the served page in Chrome and choose *Add to Home Screen*. The
 service worker caches everything, so it runs full-screen and offline after that.
+It uses a stale-while-revalidate strategy: pages are served from the cache
+immediately and refreshed in the background, so a new version is picked up the
+next time the app is opened — no reinstall, and no version string to bump.
 (Obtainium installs APKs from GitHub Releases, which a PWA does not produce — if
 you want that route later, a Bubblewrap/TWA wrapper can build an APK from this
 same codebase.)
@@ -68,11 +83,13 @@ index.html              markup shell
 style.css               dark theme, sized for one thumb
 src/engine.js           RNG, solvers, generation, difficulty
 src/game.js             marks, hearts, per-line clue arithmetic
+src/settings.js         appearance sliders, persisted to localStorage
 src/ui.js               DOM rendering and input
 src/main.js             wiring
-test/engine.test.js     node --test
+test/engine.test.js     engine and game-rule tests
+test/settings.test.js   appearance clamping
 scripts/make-icons.mjs  regenerates the PNG icons (node:zlib, no deps)
-sw.js                   offline cache — bump CACHE when you change a file
+sw.js                   offline cache, stale-while-revalidate
 ```
 
 ## Things not built yet

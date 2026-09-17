@@ -4,6 +4,7 @@
  */
 
 import { KEPT, REMOVED, UNKNOWN, MODE_KEEP, MODE_REMOVE, MAX_HEARTS, LOST, PLAYING, WON, colClue, mark, rowClue } from './game.js';
+import { CONTROLS, DEFAULTS, applySettings, formatValue, loadSettings, saveSettings } from './settings.js';
 
 const HEART_SVG = '<svg class="heart" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.7-9.6-9A5.4 5.4 0 0 1 12 6.2 5.4 5.4 0 0 1 21.6 12c-2.1 4.3-9.6 9-9.6 9z"/></svg>';
 
@@ -49,13 +50,13 @@ export function createUi(root, handlers) {
     board.append(corner);
 
     for (let j = 0; j < size; j++) {
-      const clue = clueElement();
+      const clue = clueElement('col');
       colClues.push(clue);
       board.append(clue);
     }
 
     for (let i = 0; i < size; i++) {
-      const clue = clueElement();
+      const clue = clueElement('row');
       rowClues.push(clue);
       board.append(clue);
 
@@ -79,9 +80,9 @@ export function createUi(root, handlers) {
     render(game);
   }
 
-  function clueElement() {
+  function clueElement(axis) {
     const el = document.createElement('div');
-    el.className = 'clue';
+    el.className = `clue ${axis}`;
     el.innerHTML = '<span class="remaining"></span><span class="target"></span>';
     return el;
   }
@@ -139,6 +140,106 @@ export function createUi(root, handlers) {
     root.querySelector('#overlay-next').textContent = won ? 'New board' : 'New board';
     overlay.hidden = false;
   }
+
+  const settingsPanel = root.querySelector('#settings');
+  const settingsButton = root.querySelector('#settings-open');
+  let settings = loadSettings();
+  const sliders = new Map();
+
+  function buildSettings() {
+    const host = root.querySelector('#settings-controls');
+    host.replaceChildren();
+    for (const section of CONTROLS) {
+      const group = document.createElement('div');
+      group.className = 'settings-group';
+      const heading = document.createElement('h3');
+      heading.textContent = section.group;
+      group.append(heading);
+
+      for (const control of section.items) {
+        const row = document.createElement('div');
+        row.className = 'slider-row';
+
+        const id = `set-${control.key}`;
+        const label = document.createElement('label');
+        label.htmlFor = id;
+        label.textContent = control.label;
+
+        const input = document.createElement('input');
+        input.type = 'range';
+        input.id = id;
+        input.min = String(control.min);
+        input.max = String(control.max);
+        input.step = String(control.step);
+        input.value = String(settings[control.key]);
+
+        const readout = document.createElement('output');
+        readout.htmlFor = id;
+        readout.textContent = formatValue(control, settings[control.key]);
+
+        input.addEventListener('input', () => {
+          settings = { ...settings, [control.key]: Number(input.value) };
+          readout.textContent = formatValue(control, Number(input.value));
+          applySettings(settings);
+        });
+        // Only persist once the thumb is released, not on every pixel of drag.
+        input.addEventListener('change', () => saveSettings(settings));
+
+        sliders.set(control.key, { input, readout, control });
+        row.append(label, input, readout);
+        group.append(row);
+      }
+      host.append(group);
+    }
+  }
+
+  function syncSliders() {
+    for (const [key, { input, readout, control }] of sliders) {
+      input.value = String(settings[key]);
+      readout.textContent = formatValue(control, settings[key]);
+    }
+  }
+
+  function openSettings(open) {
+    settingsPanel.hidden = !open;
+    settingsButton.setAttribute('aria-expanded', String(open));
+  }
+
+  settingsButton.addEventListener('click', () => openSettings(settingsPanel.hidden));
+  root.querySelector('#settings-close').addEventListener('click', () => openSettings(false));
+  root.querySelector('#settings-reset').addEventListener('click', () => {
+    settings = { ...DEFAULTS };
+    applySettings(settings);
+    saveSettings(settings);
+    syncSliders();
+  });
+
+  /**
+   * Eat the click that follows a dismissing tap, so closing the sheet by
+   * tapping the board does not also mark the cell underneath - which could
+   * otherwise cost a heart.
+   */
+  function swallowNextClick() {
+    const eat = (event) => {
+      event.stopPropagation();
+      event.preventDefault();
+    };
+    document.addEventListener('click', eat, { capture: true, once: true });
+    // If the gesture turned out to be a scroll, no click ever arrives - drop
+    // the listener rather than leave it to eat an unrelated tap later.
+    setTimeout(() => document.removeEventListener('click', eat, { capture: true }), 500);
+  }
+
+  // Tapping the board while the sheet is open just closes it.
+  document.addEventListener('pointerdown', (event) => {
+    if (settingsPanel.hidden) return;
+    if (settingsPanel.contains(event.target) || settingsButton.contains(event.target)) return;
+    openSettings(false);
+    swallowNextClick();
+  });
+
+  applySettings(settings);
+  buildSettings();
 
   /** Flash a cell red without changing the board - used for a wrong tap. */
   function flashMistake(i, j) {
