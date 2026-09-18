@@ -3,18 +3,22 @@
  * parts that change, so a tap never rebuilds the grid under the player's thumb.
  */
 
-import { KEPT, REMOVED, UNKNOWN, MODE_KEEP, MODE_REMOVE, MAX_HEARTS, LOST, PLAYING, WON, colClue, mark, rowClue } from './game.js';
+import { KEPT, REMOVED, UNKNOWN, MODE_KEEP, MODE_REMOVE, MAX_HEARTS, LOST, PLAYING, WON, colClue, elapsedMs, formatDuration, rowClue } from './game.js';
 import { CONTROLS, DEFAULTS, applySettings, formatValue, loadSettings, saveSettings } from './settings.js';
 
 const HEART_SVG = '<svg class="heart" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.7-9.6-9A5.4 5.4 0 0 1 12 6.2 5.4 5.4 0 0 1 21.6 12c-2.1 4.3-9.6 9-9.6 9z"/></svg>';
 
 export function createUi(root, handlers) {
+  let boardNumber = 1;
   const board = root.querySelector('#board');
   const heartsEl = root.querySelector('#hearts');
   const difficultyEl = root.querySelector('#difficulty');
   const nameEl = root.querySelector('#board-name');
-  const modeRemove = root.querySelector('#mode-remove');
-  const modeKeep = root.querySelector('#mode-keep');
+  const modeToggle = root.querySelector('#mode-toggle');
+  const modeIcons = {
+    [MODE_REMOVE]: root.querySelector('.mode-icon[data-mode="remove"]'),
+    [MODE_KEEP]: root.querySelector('.mode-icon[data-mode="keep"]'),
+  };
   const overlay = root.querySelector('#overlay');
 
   let cells = [];
@@ -28,16 +32,17 @@ export function createUi(root, handlers) {
     handlers.onCell(Number(target.dataset.row), Number(target.dataset.col));
   });
 
-  modeRemove.addEventListener('click', () => handlers.onMode(MODE_REMOVE));
-  modeKeep.addEventListener('click', () => handlers.onMode(MODE_KEEP));
+  // Either half flips it, including the half already active.
+  modeToggle.addEventListener('click', handlers.onToggleMode);
   root.querySelector('#restart').addEventListener('click', handlers.onRestart);
   root.querySelector('#new-game').addEventListener('click', handlers.onNewGame);
   root.querySelector('#overlay-again').addEventListener('click', handlers.onRestart);
   root.querySelector('#overlay-next').addEventListener('click', handlers.onNewGame);
 
   /** Rebuild the grid for a new puzzle. */
-  function build(game) {
+  function build(game, number = boardNumber) {
     current = game;
+    boardNumber = number;
     const { size, values } = game.puzzle;
     board.replaceChildren();
     board.style.gridTemplateColumns = `minmax(34px, 0.82fr) repeat(${size}, 1fr)`;
@@ -75,7 +80,7 @@ export function createUi(root, handlers) {
       cells.push(row);
     }
 
-    nameEl.textContent = 'Cross Sums';
+    nameEl.textContent = `Board ${boardNumber}`;
     difficultyEl.textContent = game.puzzle.difficulty;
     render(game);
   }
@@ -120,8 +125,10 @@ export function createUi(root, handlers) {
     ).join('');
 
     const removing = game.mode === MODE_REMOVE;
-    modeRemove.setAttribute('aria-checked', String(removing));
-    modeKeep.setAttribute('aria-checked', String(!removing));
+    modeToggle.setAttribute('aria-checked', String(!removing));
+    modeToggle.setAttribute('aria-label', `Tap mode: ${removing ? 'crossing out' : 'circling as kept'}`);
+    modeIcons[MODE_REMOVE].classList.toggle('active', removing);
+    modeIcons[MODE_KEEP].classList.toggle('active', !removing);
 
     renderOverlay(game);
   }
@@ -132,12 +139,15 @@ export function createUi(root, handlers) {
       return;
     }
     const won = game.status === WON;
+    const hearts = game.hearts === 1 ? '1 heart left' : `${game.hearts} hearts left`;
+
     root.querySelector('#overlay-title').textContent = won ? 'Solved' : 'Out of hearts';
+    root.querySelector('#overlay-time').textContent = won ? formatDuration(elapsedMs(game)) : '';
     root.querySelector('#overlay-body').textContent = won
-      ? 'Every row and column adds up. Sleep well.'
+      ? `Board ${boardNumber} · ${hearts}`
       : 'The board is still here if you want another go at it.';
     root.querySelector('#overlay-again').textContent = won ? 'Same board' : 'Retry this board';
-    root.querySelector('#overlay-next').textContent = won ? 'New board' : 'New board';
+    root.querySelector('#overlay-next').textContent = won ? 'Next board' : 'New board';
     overlay.hidden = false;
   }
 

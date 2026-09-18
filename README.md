@@ -14,9 +14,15 @@ A clue tile shows two numbers: the large one is the target, and the small one in
 the corner is how much the *undecided* cells still owe once the cells you have
 already circled are subtracted. The tile fades out once its line is fully decided.
 
-The toggle at the bottom picks what a tap does — cross out, or circle as kept.
+The switch at the bottom picks what a tap does — cross out, or circle as kept.
+Tapping anywhere on it flips the mode, including the half already active.
 You get three hearts; a tap that contradicts the solution costs one and is not
 applied, so the board on screen is always a correct partial solution.
+
+Solving a board shows your time and offers the next one. The clock starts on
+your first tap rather than when the board appears — this is a game you put down
+and pick up, and staring time is not solving time. The board counter persists
+across launches.
 
 ## Appearance
 

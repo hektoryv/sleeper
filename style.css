@@ -268,36 +268,57 @@ body {
   padding-top: 12px;
 }
 
+/* One control: tapping either half flips the mode. Sized generously because
+ * this is the thing you hit most, half asleep, without looking. */
 .mode-switch {
-  display: flex;
-  gap: 4px;
-  padding: 4px;
-  background: var(--surface);
-  border-radius: 999px;
-}
-
-.mode {
-  width: 66px;
-  height: 52px;
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  width: min(230px, 62vw);
+  height: 76px;
+  padding: 6px;
   border: 0;
   border-radius: 999px;
-  background: transparent;
-  color: rgb(255 255 255 / calc(var(--ui-alpha) * 0.5));
-  display: grid;
-  place-items: center;
+  background: var(--surface);
   cursor: pointer;
-  transition: background 160ms ease, color 160ms ease;
 }
 
-.mode svg {
-  width: 24px;
-  height: 24px;
+.mode-thumb {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: calc(50% - 6px);
+  height: calc(100% - 12px);
+  border-radius: 999px;
+  background: var(--surface-raised);
+  transition: transform 200ms cubic-bezier(0.3, 0.8, 0.4, 1);
+}
+
+.mode-switch[aria-checked="true"] .mode-thumb {
+  transform: translateX(100%);
+}
+
+.mode-icon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  color: rgb(255 255 255 / calc(var(--ui-alpha) * 0.4));
+  transition: color 160ms ease;
+}
+
+.mode-icon svg {
+  width: 30px;
+  height: 30px;
   fill: currentColor;
 }
 
-.mode[aria-checked="true"] {
-  background: var(--surface-raised);
+.mode-icon.active {
   color: var(--chrome-text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mode-thumb { transition: none; }
 }
 
 /* ---------- appearance sheet ---------- */
@@ -453,6 +474,19 @@ input[type="range"]::-moz-range-thumb {
   margin: 0 0 8px;
   font-size: 24px;
   color: var(--accent);
+}
+
+.overlay-time {
+  margin: 4px 0 2px !important;
+  font-size: 40px;
+  font-weight: 800;
+  color: rgb(255 255 255 / 0.82) !important;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.overlay-time:empty {
+  display: none;
 }
 
 .sheet p {

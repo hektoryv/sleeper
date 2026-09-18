@@ -1,10 +1,30 @@
 /** Wiring: one game, one UI, and the handlers between them. */
 
-import { createGame, mark, restart, setMode } from './game.js';
+import { createGame, mark, restart, toggleMode } from './game.js';
 import { createUi } from './ui.js';
 
 const SIZE = 8;
+const BOARD_KEY = 'cross-sums-board-number';
 
+/** The board counter carries across launches, so the count means something. */
+function loadBoardNumber() {
+  try {
+    const stored = Number(localStorage.getItem(BOARD_KEY));
+    return Number.isFinite(stored) && stored >= 1 ? Math.floor(stored) : 1;
+  } catch {
+    return 1;
+  }
+}
+
+function saveBoardNumber(number) {
+  try {
+    localStorage.setItem(BOARD_KEY, String(number));
+  } catch {
+    /* private mode - the counter just restarts next launch */
+  }
+}
+
+let boardNumber = loadBoardNumber();
 let game = createGame({ size: SIZE });
 
 const ui = createUi(document, {
@@ -13,8 +33,8 @@ const ui = createUi(document, {
     if (outcome === 'mistake') ui.flashMistake(i, j);
     if (outcome !== 'ignored') ui.render(game);
   },
-  onMode(mode) {
-    setMode(game, mode);
+  onToggleMode() {
+    toggleMode(game);
     ui.render(game);
   },
   onRestart() {
@@ -22,12 +42,14 @@ const ui = createUi(document, {
     ui.render(game);
   },
   onNewGame() {
+    boardNumber += 1;
+    saveBoardNumber(boardNumber);
     game = createGame({ size: SIZE });
-    ui.build(game);
+    ui.build(game, boardNumber);
   },
 });
 
-ui.build(game);
+ui.build(game, boardNumber);
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

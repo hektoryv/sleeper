@@ -33,14 +33,15 @@
       <div id="board" class="board" role="grid" aria-label="Cross sums board"></div>
 
       <div class="controls">
-        <div class="mode-switch" role="radiogroup" aria-label="Tap mode">
-          <button id="mode-remove" class="mode" type="button" role="radio" aria-checked="true" aria-label="Cross out">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.2 3.6 21 8.4a2 2 0 0 1 0 2.8l-8 8H19v2H8.2a2 2 0 0 1-1.4-.6l-3.4-3.4a2 2 0 0 1 0-2.8L13.4 3.6a2 2 0 0 1 2.8 0M11 17.6l-3.6-3.6-2.2 2.2L8.8 19.8z"/></svg>
-          </button>
-          <button id="mode-keep" class="mode" type="button" role="radio" aria-checked="false" aria-label="Circle as kept">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17.25V21h3.75L17.8 9.94l-3.75-3.75zm17.7-10.2a1 1 0 0 0 0-1.4l-2.35-2.35a1 1 0 0 0-1.4 0l-1.84 1.83 3.75 3.75z"/></svg>
-          </button>
-        </div>
+        <button id="mode-toggle" class="mode-switch" type="button" role="switch" aria-checked="false" aria-label="Tap mode: crossing out">
+          <span class="mode-thumb" aria-hidden="true"></span>
+          <span class="mode-icon" data-mode="remove" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M16.2 3.6 21 8.4a2 2 0 0 1 0 2.8l-8 8H19v2H8.2a2 2 0 0 1-1.4-.6l-3.4-3.4a2 2 0 0 1 0-2.8L13.4 3.6a2 2 0 0 1 2.8 0M11 17.6l-3.6-3.6-2.2 2.2L8.8 19.8z"/></svg>
+          </span>
+          <span class="mode-icon" data-mode="keep" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.8 9.94l-3.75-3.75zm17.7-10.2a1 1 0 0 0 0-1.4l-2.35-2.35a1 1 0 0 0-1.4 0l-1.84 1.83 3.75 3.75z"/></svg>
+          </span>
+        </button>
       </div>
     </main>
 
@@ -58,6 +59,7 @@
     <div id="overlay" class="overlay" hidden>
       <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="overlay-title">
         <h2 id="overlay-title"></h2>
+        <p id="overlay-time" class="overlay-time"></p>
         <p id="overlay-body"></p>
         <div class="sheet-buttons">
           <button id="overlay-again" class="text-button" type="button"></button>

@@ -25,6 +25,9 @@ import {
   mark,
   restart,
   rowClue,
+  elapsedMs,
+  formatDuration,
+  toggleMode,
 } from '../src/game.js';
 
 test('subsetsWithSum finds exactly the subsets that hit the target', () => {
@@ -226,4 +229,67 @@ test('restart clears the board and hearts but keeps the same puzzle', () => {
   assert.equal(fresh.decided, 0);
   assert.equal(fresh.marks[0][0], UNKNOWN);
   assert.equal(fresh.status, PLAYING);
+});
+
+test('the clock starts on the first tap, not when the board appears', () => {
+  const game = createGame({ seed: 91 });
+  assert.equal(game.startedAt, null, 'an untouched board has not started');
+  assert.equal(elapsedMs(game), 0);
+
+  const { solution } = game.puzzle;
+  mark(game, 0, 0, solution[0][0] ? MODE_KEEP : MODE_REMOVE);
+  assert.ok(game.startedAt !== null, 'the first mark starts the clock');
+  assert.equal(game.finishedAt, null, 'an unfinished board has no finish time');
+});
+
+test('a losing tap starts the clock too', () => {
+  const game = createGame({ seed: 92 });
+  let kept = null;
+  outer: for (let i = 0; i < game.puzzle.size; i++) {
+    for (let j = 0; j < game.puzzle.size; j++) {
+      if (game.puzzle.solution[i][j]) { kept = [i, j]; break outer; }
+    }
+  }
+  assert.equal(mark(game, kept[0], kept[1], MODE_REMOVE).outcome, 'mistake');
+  assert.ok(game.startedAt !== null);
+});
+
+test('solving stops the clock and freezes the elapsed time', () => {
+  const game = createGame({ seed: 93 });
+  const { size, solution } = game.puzzle;
+  for (let i = 0; i < size; i++) {
+    for (let j = 0; j < size; j++) mark(game, i, j, solution[i][j] ? MODE_KEEP : MODE_REMOVE);
+  }
+  assert.equal(game.status, WON);
+  assert.ok(game.finishedAt !== null, 'winning records a finish time');
+
+  const settled = elapsedMs(game);
+  assert.equal(elapsedMs(game), settled, 'a finished time does not keep counting');
+  assert.ok(settled >= 0);
+});
+
+test('restart clears the clock along with the board', () => {
+  const game = createGame({ seed: 94 });
+  mark(game, 0, 0, game.puzzle.solution[0][0] ? MODE_KEEP : MODE_REMOVE);
+  const fresh = restart(game);
+  assert.equal(fresh.startedAt, null);
+  assert.equal(fresh.finishedAt, null);
+  assert.equal(elapsedMs(fresh), 0);
+});
+
+test('formatDuration renders m:ss, and h:mm:ss only when needed', () => {
+  assert.equal(formatDuration(0), '0:00');
+  assert.equal(formatDuration(9_000), '0:09');
+  assert.equal(formatDuration(65_000), '1:05');
+  assert.equal(formatDuration(600_000), '10:00');
+  assert.equal(formatDuration(3_600_000), '1:00:00');
+  assert.equal(formatDuration(3_725_000), '1:02:05');
+  assert.equal(formatDuration(-50), '0:00', 'a negative clock never renders as negative');
+});
+
+test('toggleMode flips in both directions', () => {
+  const game = createGame({ seed: 95 });
+  assert.equal(game.mode, MODE_REMOVE);
+  assert.equal(toggleMode(game).mode, MODE_KEEP, 'a tap while crossing out switches to circling');
+  assert.equal(toggleMode(game).mode, MODE_REMOVE, 'and a tap while circling switches back');
 });

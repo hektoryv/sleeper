@@ -37,6 +37,10 @@ function startPuzzle(puzzle) {
     mode: MODE_REMOVE,
     status: PLAYING,
     decided: 0,
+    // The clock starts on the first tap, not when the board appears - this is a
+    // game you put down and pick up, and staring time is not solving time.
+    startedAt: null,
+    finishedAt: null,
   };
 }
 
@@ -61,6 +65,8 @@ export function mark(game, i, j, mode = game.mode) {
   if (game.status !== PLAYING) return { outcome: 'ignored', game };
   if (game.marks[i][j] !== UNKNOWN) return { outcome: 'ignored', game };
 
+  if (game.startedAt === null) game.startedAt = now();
+
   const wanted = mode === MODE_KEEP ? KEPT : REMOVED;
   const truth = game.puzzle.solution[i][j] ? KEPT : REMOVED;
 
@@ -75,8 +81,31 @@ export function mark(game, i, j, mode = game.mode) {
 
   game.marks[i][j] = wanted;
   game.decided += 1;
-  if (game.decided === game.puzzle.size * game.puzzle.size) game.status = WON;
+  if (game.decided === game.puzzle.size * game.puzzle.size) {
+    game.status = WON;
+    game.finishedAt = now();
+  }
   return { outcome: 'applied', game };
+}
+
+function now() {
+  return Date.now();
+}
+
+/** Time on the board so far, or the final time once it is solved. */
+export function elapsedMs(game) {
+  if (game.startedAt === null) return 0;
+  return (game.finishedAt ?? now()) - game.startedAt;
+}
+
+/** m:ss, or h:mm:ss if you really took your time. */
+export function formatDuration(ms) {
+  const total = Math.max(0, Math.round(ms / 1000));
+  const seconds = total % 60;
+  const minutes = Math.floor(total / 60) % 60;
+  const hours = Math.floor(total / 3600);
+  const pad = (n) => String(n).padStart(2, '0');
+  return hours > 0 ? `${hours}:${pad(minutes)}:${pad(seconds)}` : `${minutes}:${pad(seconds)}`;
 }
 
 /**
